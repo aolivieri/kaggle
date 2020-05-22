@@ -99,10 +99,7 @@ logisticRegression.fit(X_train, y_train)
 predictions = logisticRegression.predict(X_test)
 
 from sklearn.metrics import mean_squared_error
-np.sqrt(mean_squared_error(y_test,predictions))
-
-from sklearn.metrics import mean_squared_log_error
-np.sqrt(mean_squared_log_error(y_test,predictions))
+np.sqrt(mean_squared_error(np.log(y_test),np.log(predictions)))
 
 
 test['SalePrice'] = logisticRegression.predict(test)

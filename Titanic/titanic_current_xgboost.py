@@ -39,14 +39,18 @@ from statistics import mode
 # Let's impute 'Embarked' missing values with the mode, which happens to be "S"!
 full["Embarked"] = full["Embarked"].fillna(mode(full["Embarked"]))
 
+#full = pd.get_dummies(full, columns=['Sex', 'Embarked'])
+
 # Convert 'Sex' variable to integer form!
 full["Sex"][full["Sex"] == "male"] = 0
 full["Sex"][full["Sex"] == "female"] = 1
+full['Sex'] = pd.to_numeric(full['Sex'])
 
 # Convert 'Embarked' variable to integer form!
 full["Embarked"][full["Embarked"] == "S"] = 0
 full["Embarked"][full["Embarked"] == "C"] = 1
 full["Embarked"][full["Embarked"] == "Q"] = 2
+full["Embarked"] = pd.to_numeric(full["Embarked"])
 
 #sns.heatmap(full.corr(), annot = True)
 
@@ -120,78 +124,30 @@ X_train, X_test, y_train, y_test = train_test_split(train.drop(['Survived', 'Pas
                                                     train['Survived'], test_size = 0.2, 
                                                     random_state = 2)
 
-# We'll use a logistic regression model again, but we'll go to something more fancy soon! 
-from sklearn.linear_model import LogisticRegression
-logisticRegression = LogisticRegression(max_iter = 10000)
-logisticRegression.fit(X_train, y_train)
+
+from xgboost import XGBClassifier
+classifier = XGBClassifier()
+classifier.fit(X_train, y_train)
+
 
 # Predict!
-predictions = logisticRegression.predict(X_test)
-
-from sklearn.metrics import classification_report, confusion_matrix
-
-# Print the resulting confusion matrix
-print(confusion_matrix(y_test, predictions))
+predictions = classifier.predict(X_test)
 
 from sklearn.metrics import accuracy_score
 
 # Calculate the accuracy for our powerful random forest!
 print("accuracy is: ", round(accuracy_score(y_test, predictions), 2))
 
-from sklearn.model_selection import KFold
-
-# Set our robust cross-validation scheme!
-kf = KFold(n_splits = 5, random_state = 2)
-
-from sklearn.model_selection import cross_val_score
-
-# Print our CV accuracy estimate:
-print(cross_val_score(logisticRegression, X_test, y_test, cv = kf).mean())
-
-from sklearn.ensemble import RandomForestClassifier
-
-#Initialize randomForest
-randomForest = RandomForestClassifier(random_state = 2)
-
-# Set our parameter grid
-param_grid = { 
-    'criterion' : ['gini', 'entropy'],
-    'n_estimators': [100, 300, 500],
-    'max_features': ['auto', 'log2'],
-    'max_depth' : [3, 5, 7]    
-}
-
-from sklearn.model_selection import GridSearchCV
-
-# Grid search
-randomForest_CV = GridSearchCV(estimator = randomForest, param_grid = param_grid, cv = 5)
-randomForest_CV.fit(X_train, y_train)
-
-# Print best hyperparameters
-randomForest_CV.best_params_
-
-# Define our optimal randomForest algo
-randomForestFinalModel = RandomForestClassifier(random_state = 2, criterion = 'gini', max_depth = 7, max_features = 'auto', n_estimators = 300)
-
-# Fit the model to the training set
-randomForestFinalModel.fit(X_train, y_train)
-
 # Predict!
-predictions = randomForestFinalModel.predict(X_test)
-
-# Calculate the accuracy for our powerful random forest!
-print("accuracy is: ", round(accuracy_score(y_test, predictions), 2))
-
-# Predict!
-test['Survived'] = randomForestFinalModel.predict(test.drop(['PassengerId'], axis = 1))
+test['Survived'] = classifier.predict(test.drop(['PassengerId'], axis = 1))
 
 # Cast 'Survived' back to integer
 test['Survived'] = test['Survived'].astype(np.int8)
 
 # Write test predictions for final submission
-test[['PassengerId', 'Survived']].to_csv('kaggle_submission3.csv', index = False)
+test[['PassengerId', 'Survived']].to_csv('kaggle_submission_xgboost.csv', index = False)
 
-my_submission = pd.read_csv('kaggle_submission3.csv')
+my_submission = pd.read_csv('kaggle_submission_xgboost.csv')
 print(my_submission.head())
 print(my_submission.tail())
 

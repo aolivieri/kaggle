@@ -22,11 +22,17 @@ warnings.filterwarnings('ignore')
 
 # Read train data
 train = pd.read_csv('train.csv')
-#X = train.iloc[:,:-1].values
-#y = train.iloc[:,-1].values
+
+is_null_train = train.isnull().mean().sort_values(ascending = False)
+
+train['SalePrice'].describe()
+#histogram
+#sns.distplot(train['SalePrice']);
 
 # Read test data
 test = pd.read_csv('test.csv')
+is_null_test = test.isnull().mean().sort_values(ascending = False)
+
 
 # A trick to keep 'Survived' in our dataset
 test['SaleCondition'] = np.nan
@@ -34,40 +40,59 @@ test['SaleCondition'] = np.nan
 # Train + test concatenation
 full = pd.concat([train, test])
 
-#full.head()
+#correlation matrix
+corrmat = full.corr()
+f, ax = plt.subplots(figsize=(12, 9))
+#sns.heatmap(corrmat, vmax=.8, square=True);
+
+#saleprice correlation matrix
+k = 10 #number of variables for heatmap
+cols = corrmat.nlargest(k, 'SalePrice')['SalePrice'].index
+cm = np.corrcoef(full[cols].values.T)
+sns.set(font_scale=1.25)
+hm = sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 10}, yticklabels=cols.values, xticklabels=cols.values)
+#plt.show()
+
+#missing data
+total = full.isnull().sum().sort_values(ascending=False)
+percent = (full.isnull().sum()/full.isnull().count()).sort_values(ascending=False)
+missing_data = pd.concat([total, percent], axis=1, keys=['Total', 'Percent'])
+missing_data = missing_data.drop('SalePrice', axis = 0)
+missing_data.head(20)
+
+#dealing with missing data
+full = full.drop((missing_data[missing_data['Total'] > 1]).index,1)
+full = full.drop(full.loc[full['Electrical'].isnull()].index)
+full = full.drop(full.loc[full['KitchenQual'].isnull()].index)
+full = full.drop(full.loc[full['TotalBsmtSF'].isnull()].index)
+full = full.drop(full.loc[full['BsmtUnfSF'].isnull()].index)
+full = full.drop(full.loc[full['BsmtFinSF2'].isnull()].index)
+full = full.drop(full.loc[full['BsmtFinSF1'].isnull()].index)
+full = full.drop(full.loc[full['SaleType'].isnull()].index)
+full = full.drop(full.loc[full['Exterior1st'].isnull()].index)
+full = full.drop(full.loc[full['Exterior2nd'].isnull()].index)
+full = full.drop(full.loc[full['GarageArea'].isnull()].index)
+full = full.drop(full.loc[full['GarageCars'].isnull()].index)
+full.isnull().sum().max() #just checking that there's no missing data missing...
 
 # Let's calculate percentages of missing values!
-is_null = full.isnull().mean().sort_values(ascending = False)
+#is_null = full.isnull().mean().sort_values(ascending = False)
+#sns.heatmap(full.isnull(), yticklabel = False, cbar = False, cmap = 'plasma')
 
-empty_variables = []
-few_nans_variables = []
-for index,value in is_null.items():
-    if index != 'SalePrice':
-        if value > 0.30 :
-            empty_variables.append(index)
-        elif value != 0:
-            few_nans_variables.append(index)
-
-# Drop features with lots of NaNs
-full = full.drop(empty_variables, axis = 1)
-
-# Learn more about the procedure below
-#thresh = len(full) * .45
-#full.dropna(thresh = thresh, axis = 1, inplace = True)
+#full['FireplaceQu'] = full['FireplaceQu'].fillna('NA')
 
 
-# Categorical variables
-variable_types = full.dtypes
-categorical_variables = []
-for index, value in variable_types.items():
-    if value == 'object':
-        categorical_variables.append(index)
+# Other utilities
+#sns.countplot(train['XXX'])
+#train.XXX.value_counts()
+#train['XXX'].hist(bins = 50, color = 'blue')
 
 
-for few_nans_variable in few_nans_variables:
-    full[few_nans_variable] = full[few_nans_variable].fillna(mode(full[few_nans_variable]))
+#  lambda to impute the median
+#full['Age'] = full.groupby("Pclass")['Age'].transform(lambda x: x.fillna(x.median()))
 
-full = pd.get_dummies(data=full, columns=categorical_variables)
+
+full = pd.get_dummies(full)
 
 # Drop other useless variables
 full.drop(['Id'], axis = 1)
@@ -89,33 +114,8 @@ from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X , 
                                                     y, test_size = 0.2, 
                                                     random_state = 2)
-
-# We'll use a logistic regression model again, but we'll go to something more fancy soon! 
-from sklearn.linear_model import LogisticRegression
-logisticRegression = LogisticRegression(max_iter = 10000)
-logisticRegression.fit(X_train, y_train)
-
-# Predict!
-predictions = logisticRegression.predict(X_test)
-
-from sklearn.metrics import mean_squared_error
-np.sqrt(mean_squared_error(y_test,predictions))
-
-from sklearn.metrics import mean_squared_log_error
-np.sqrt(mean_squared_log_error(y_test,predictions))
-
-
-test['SalePrice'] = logisticRegression.predict(test)
-
-
-# Write test predictions for final submission
-test[['Id', 'SalePrice']].to_csv('kaggle_submission.csv', index = False)
-
-my_submission = pd.read_csv('kaggle_submission.csv')
-print(my_submission.head())
-print(my_submission.tail())
-
-
+#X_train = X
+#y_train = y
 
 
 
@@ -123,11 +123,6 @@ from sklearn.model_selection import KFold
 
 # Set our robust cross-validation scheme!
 kf = KFold(n_splits = 5, random_state = 2)
-
-from sklearn.model_selection import cross_val_score
-
-# Print our CV accuracy estimate:
-print(cross_val_score(logisticRegression, X_test, y_test, cv = kf).mean())
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -145,7 +140,9 @@ param_grid = {
 from sklearn.model_selection import GridSearchCV
 
 # Grid search
-randomForest_CV = GridSearchCV(estimator = randomForest, param_grid = param_grid, cv = 5)
+randomForest_CV = GridSearchCV(estimator = randomForest, 
+                               param_grid = param_grid, 
+                               cv = 5)
 randomForest_CV.fit(X_train, y_train)
 
 # Print best hyperparameters
@@ -153,8 +150,8 @@ randomForest_CV.best_params_
 
 # Define our optimal randomForest algo
 randomForestFinalModel = RandomForestClassifier(random_state = 2, 
-                                                criterion = 'gini', 
-                                                max_depth = 7, 
+                                                criterion = 'entropy', 
+                                                max_depth = 5, 
                                                 max_features = 'auto', 
                                                 n_estimators = 300)
 
@@ -164,21 +161,21 @@ randomForestFinalModel.fit(X_train, y_train)
 # Predict!
 predictions = randomForestFinalModel.predict(X_test)
 
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_squared_error
+np.sqrt(mean_squared_error(np.log(y_test),np.log(predictions)))
+
+from sklearn.metrics import r2_score
 
 # Calculate the accuracy for our powerful random forest!
-print("accuracy is: ", round(accuracy_score(y_test, predictions), 2))
+print("accuracy is: ", round(r2_score(y_test, predictions), 2))
 
-# Predict!
-test['Survived'] = randomForestFinalModel.predict(test.drop(['PassengerId'], axis = 1))
+test['SalePrice'] = randomForestFinalModel.predict(test)
 
-# Cast 'Survived' back to integer
-test['Survived'] = test['Survived'].astype(np.int8)
 
 # Write test predictions for final submission
-test[['PassengerId', 'Survived']].to_csv('kaggle_submission3.csv', index = False)
+test[['Id', 'SalePrice']].to_csv('kaggle_submission_rf_another.csv', index = False)
 
-my_submission = pd.read_csv('kaggle_submission3.csv')
+my_submission = pd.read_csv('kaggle_submission_rf_another.csv')
 print(my_submission.head())
 print(my_submission.tail())
 
