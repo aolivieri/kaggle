@@ -39,6 +39,8 @@ from statistics import mode
 # Let's impute 'Embarked' missing values with the mode, which happens to be "S"!
 full["Embarked"] = full["Embarked"].fillna(mode(full["Embarked"]))
 
+full = pd.get_dummies(full, columns=['Sex', 'Embarked'], drop_first=True)
+
 # Convert 'Sex' variable to integer form!
 full["Sex"][full["Sex"] == "male"] = 0
 full["Sex"][full["Sex"] == "female"] = 1
@@ -171,7 +173,11 @@ randomForest_CV.fit(X_train, y_train)
 randomForest_CV.best_params_
 
 # Define our optimal randomForest algo
-randomForestFinalModel = RandomForestClassifier(random_state = 2, criterion = 'gini', max_depth = 7, max_features = 'auto', n_estimators = 300)
+randomForestFinalModel = RandomForestClassifier(random_state = 2, 
+                                                criterion = 'gini', 
+                                                max_depth = 7, 
+                                                max_features = 'auto', 
+                                                n_estimators = 100)
 
 # Fit the model to the training set
 randomForestFinalModel.fit(X_train, y_train)
