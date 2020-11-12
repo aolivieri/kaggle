@@ -174,10 +174,10 @@ randomForest_CV.best_params_
 
 # Define our optimal randomForest algo
 randomForestFinalModel = RandomForestClassifier(random_state = 2, 
-                                                criterion = 'gini', 
-                                                max_depth = 7, 
-                                                max_features = 'auto', 
-                                                n_estimators = 100)
+                                                criterion = 'entropy', 
+                                                max_depth = 5, 
+                                                max_features = 'log2', 
+                                                n_estimators = 500)
 
 # Fit the model to the training set
 randomForestFinalModel.fit(X_train, y_train)
@@ -197,7 +197,7 @@ test['Survived'] = test['Survived'].astype(np.int8)
 # Write test predictions for final submission
 test[['PassengerId', 'Survived']].to_csv('kaggle_submission3.csv', index = False)
 
-my_submission = pd.read_csv('kaggle_submission3.csv')
+my_submission = pd.read_csv('kaggle_submission4.csv')
 print(my_submission.head())
 print(my_submission.tail())
 

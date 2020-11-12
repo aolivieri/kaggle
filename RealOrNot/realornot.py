@@ -45,13 +45,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20, rand
 # Training the Naive Bayes model on the Training set
 #from sklearn.naive_bayes import GaussianNB
 #classifier = GaussianNB()
-#classifier.fit(X_train, y_train)
 
-from sklearn.linear_model import SGDClassifier
-classifier = SGDClassifier(loss='hinge', penalty='l2',alpha=1e-3, random_state=42, max_iter=5, tol=None)
+
+#from sklearn.linear_model import SGDClassifier - BEST SO FAR
+#classifier = SGDClassifier(loss='hinge', penalty='l2',alpha=1e-3, random_state=42, max_iter=5, tol=None)
+
+
+from sklearn.linear_model import RidgeClassifier
+classifier = RidgeClassifier()
+
 classifier.fit(X_train, y_train)
-
-
 
 # Predicting the Test set results
 y_pred = classifier.predict(X_test)
@@ -66,6 +69,7 @@ from sklearn.model_selection import cross_val_score
 accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10)
 print("Accuracy: {:.2f} %".format(accuracies.mean()*100))
 print("Standard Deviation: {:.2f} %".format(accuracies.std()*100))
+
 
 from sklearn.metrics import precision_recall_fscore_support
 score = precision_recall_fscore_support(y_test, y_pred, average='macro')
@@ -92,8 +96,8 @@ testset = testset.drop(['keyword','location', 'text'], axis=1)
 
 testset['target'] = classifier.predict(X_validation)
 
-testset.to_csv('kaggle_submission_linearSVM.csv', index = False)
+testset.to_csv('kaggle_submission_RidgeClassifier.csv', index = False)
 
-my_submission = pd.read_csv('kaggle_submission_linearSVM.csv')
+my_submission = pd.read_csv('kaggle_submission_RidgeClassifier.csv')
 print(my_submission.head())
 print(my_submission.tail())

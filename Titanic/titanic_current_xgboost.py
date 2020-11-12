@@ -179,10 +179,10 @@ classifier_final = XGBClassifier(learning_rate=0.02,
                                  objective='binary:logistic',
                                  silent=True, 
                                  nthread=1,
-                                 colsample_bytree = 0.8,
-                                 gamma = 1,
-                                 min_child_weight = 5,
-                                 subsample = 0.8,
+                                 colsample_bytree = 0.6,
+                                 gamma = 2,
+                                 min_child_weight = 1,
+                                 subsample = 1.0,
                                  max_depth = 5
                                  )
 
@@ -209,7 +209,7 @@ test['Survived'] = classifier_final.predict(test.drop(['PassengerId'], axis = 1)
 test['Survived'] = test['Survived'].astype(np.int8)
 
 # Write test predictions for final submission
-test[['PassengerId', 'Survived']].to_csv('kaggle_submission_xgboost_fulldata.csv', index = False)
+test[['PassengerId', 'Survived']].to_csv('kaggle_submission_xgboost_fulldata2.csv', index = False)
 
 my_submission = pd.read_csv('kaggle_submission_xgboost_fulldata.csv')
 print(my_submission.head())
